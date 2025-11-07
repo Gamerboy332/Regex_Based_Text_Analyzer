@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DFA Playground — HTML</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f2b44; --panel:#13324a; --card:#102837; --accent:#31c7ff; --text:#e6f0fb; --muted:#9fb6ca;
+      --radius:8px;
+    }
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    body{margin:0;background:var(--bg);color:var(--text);}
+    .app{display:flex;flex-direction:column;height:100vh}
+    .topbar{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);border-bottom:1px solid rgba(255,255,255,0.03)}
+    .logo{width:40px;height:40px;border-radius:8px;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
+    .title{font-size:18px;font-weight:600}
+    .content{flex:1;display:flex;gap:12px;padding:16px}
+    .col-left{width:220px;background:var(--panel);border-radius:8px;padding:12px}
+    .col-center{flex:1;background:transparent;padding:12px}
+    .col-right{width:300px;background:var(--panel);border-radius:8px;padding:12px}
+    .card{background:var(--card);padding:12px;border-radius:8px;margin-bottom:12px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=text], textarea, select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+    textarea{min-height:120px;font-family:monospace}
+    .btn{display:inline-block;padding:8px 12px;border-radius:6px;background:var(--accent);color:#042033;border:none;cursor:pointer}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--text)}
+    .nav-btn{display:block;width:100%;text-align:left;padding:10px;border-radius:6px;border:none;background:transparent;color:var(--text);margin-bottom:8px;cursor:pointer}
+    .nav-btn:hover{background:rgba(255,255,255,0.02)}
+    .small{font-size:12px;color:var(--muted)}
+    .preview{background:#071724;border-radius:6px;padding:8px}
+  .result-accepted{color:green}
+  .result-rejected{color:red}
+    .footer{padding:10px 18px;font-size:12px;color:var(--muted);border-top:1px solid rgba(255,255,255,0.03)}
+    .row{display:flex;gap:8px;align-items:center}
+    .stack{display:flex;flex-direction:column;gap:8px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="logo">GS</div>
+      <div class="title">DFA Playground</div>
+      <div style="flex:1"></div>
+    </div>
+
+    <div class="content">
+      <div class="col-left">
+        <div class="card">
+          <div style="font-weight:600">Status</div>
+          <div id="status-text" class="small">Ready</div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600">Inspector</div>
+          <div id="inspector-area" class="small">No run yet.</div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600;display:flex;align-items:center;gap:6px">Saved DFAs <button class="btn-ghost" id="btn-refresh-saved" style="padding:4px 8px;font-size:11px">Refresh</button></div>
+          <div id="saved-list" class="small" style="max-height:180px;overflow:auto">None saved yet.</div>
+        </div>
+      </div>
+
+      <div class="col-center">
+        <div class="card">
+          <div style="font-weight:700">Define DFA</div>
+          <div class="stack" style="margin-top:8px">
+            <div>
+              <label>DFA Name (optional)</label>
+              <input id="dfa-name" type="text" placeholder="My DFA" />
+            </div>
+            <div>
+              <label>States (comma separated)</label>
+              <input id="states" type="text" placeholder="q0,q1,q2" />
+            </div>
+            <div>
+              <label>Alphabet (comma separated)</label>
+              <input id="alphabet" type="text" placeholder="0,1" />
+            </div>
+            <div class="row">
+              <div style="flex:1">
+                <label>Start state</label>
+                <input id="start" type="text" placeholder="q0" />
+              </div>
+              <div style="width:16px"></div>
+              <div style="flex:1">
+                <label>Final states</label>
+                <input id="finals" type="text" placeholder="q2" />
+              </div>
+            </div>
+            <div>
+              <label>Transitions (one per line, format: src,sym->dst)</label>
+              <div style="display:flex; gap:8px; align-items:stretch;">
+                <textarea id="transitions" rows="5" style="flex:1;" placeholder="q0,0->q1\nq0,1->q0\nq1,0->q1\nq1,1->q0"></textarea>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <button type="button" id="btn-random-transitions" class="secondary" title="Generate a random complete DFA using current states & alphabet">Create Random</button>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <button class="btn" id="btn-save-dfa">Save DFA</button>
+              <button class="btn-ghost" id="btn-clear">Clear</button>
+              <div style="flex:1"></div>
+              <button class="btn-ghost" id="btn-go-test">Proceed to Test Strings</button>
+            </div>
+            <div class="row">
+              <button class="btn-ghost" id="btn-export-json" title="Download DFA as JSON">Export JSON</button>
+              <button class="btn-ghost" id="btn-export-text" title="Download DFA as text format">Export TXT</button>
+              <button class="btn-ghost" id="btn-import-json" title="Load DFA from JSON file">Import JSON</button>
+              <button class="btn-ghost" id="btn-import-txt" title="Load DFA from TXT file">Import TXT</button>
+              <div style="flex:1"></div>
+              <button class="btn" id="btn-share-link" title="Copy sharable link">Share Link</button>
+            </div>
+            <div class="small">When you click Save DFA it is also stored in your browser for reuse.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700">Test Strings</div>
+          <div style="margin-top:8px" class="row">
+            <input id="test-input" type="text" placeholder="Enter input string" style="flex:1" />
+            <button class="btn" id="btn-run">Run Test</button>
+            <button class="btn-ghost" id="btn-simulate" title="Animate traversal">Simulate</button>
+          </div>
+
+          <div id="test-result" style="margin-top:12px" class="small">No test run yet.</div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700">Diagram Preview</div>
+          <div id="diagram-area" class="preview" style="margin-top:8px;min-height:200px;display:flex;align-items:center;justify-content:center">No diagram</div>
+        </div>
+      </div>
+
+      <div class="col-right">
+        <div class="card">
+          <div style="font-weight:700">Result</div>
+          <div id="result-inspector" style="margin-top:8px" class="small">No run</div>
+          <div style="margin-top:12px" class="row">
+            <button class="btn" id="btn-save-png">Save PNG</button>
+            <button class="btn-ghost" id="btn-save-jpg">Save JPG</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700">Examples</div>
+          <div style="margin-top:8px" class="stack">
+            <button class="btn-ghost" id="load-example-ends01">Ends with '01' (example)</button>
+            <button class="btn-ghost" id="load-example-simple">Simple A/B example</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700">History</div>
+          <div id="history-area" class="small" style="max-height:220px;overflow:auto">No events yet.</div>
+          <div style="margin-top:8px" class="row">
+            <button class="btn-ghost" id="btn-clear-history">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">DFA Playground — HTML version. Functions based on README instructions: define DFA, test strings, visualize highlighted path, save images.</div>
+  </div>
+
+  <!-- No external diagram libs; we render a simple SVG ourselves. -->
+  <script>
+    // Minimal DFA playground in JS
+    let currentDFA = null;
+    const historyLog = [];
+    const status = id('status-text');
+    const inspector = id('inspector-area');
+    const diagramArea = id('diagram-area');
+
+    function id(i){return document.getElementById(i)}
+
+    function parseDFAFromForm(){
+      const name = id('dfa-name').value.trim();
+      const states = id('states').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const alphabet = id('alphabet').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const start = id('start').value.trim();
+      const finals = id('finals').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const transLines = id('transitions').value.split('\n').map(l=>l.trim()).filter(Boolean);
+      const transitions = {};
+      for(const ln of transLines){
+        const parts = ln.split('->');
+        if(parts.length!==2) continue;
+        const left = parts[0].split(',');
+        if(left.length!==2) continue;
+        const src = left[0].trim(); const sym=left[1].trim(); const dst = parts[1].trim();
+        transitions[`${src}:::${sym}`]=dst;
+      }
+      return {name, states, alphabet, start, finals, transitions};
+    }
+
+    function setStatus(t){status.textContent=t}
+    function logEvent(inputStr, accepted){
+      // Only record input history: string + accepted/rejected, no timestamp
+      if(typeof inputStr !== 'string') return;
+      const badge = `<span class='${accepted?'result-accepted':'result-rejected'}'>${accepted?'Accepted':'Rejected'}</span>`;
+      historyLog.unshift(`${escapeHTML(inputStr)} — ${badge}`);
+      if(historyLog.length>200) historyLog.pop();
+      const area = document.getElementById('history-area');
+      if(area){ area.innerHTML = historyLog.map(x=>`<div>${x}</div>`).join(''); }
+    }
+
+    function saveDFAFromForm(){
+      try{
+        const d = parseDFAFromForm();
+        if(!d.states.length||!d.alphabet.length||!d.start||!d.finals.length){
+          alert('States, alphabet, start, and final states are required');
+          return;
+        }
+        currentDFA = d;
+        inspector.textContent = `DFA saved — states:${d.states.length}, alphabet:${d.alphabet.length}`;
+        setStatus('DFA defined');
+        renderDiagram('');
+  try{ persistToLocal(d); }catch(e){}
+        try{ addDFAToSavedList(d); refreshSavedListUI(); }catch(e){}
+      }catch(e){alert(e)}
+    }
+
+    function runDFAOnInput(inputStr){
+      if(!currentDFA){alert('Define a DFA first');return}
+      let cur = currentDFA.start;
+      const path=[cur];
+      for(const sym of inputStr){
+        const key = `${cur}:::${sym}`;
+        if(currentDFA.transitions[key]){
+          cur = currentDFA.transitions[key];
+          path.push(cur);
+        } else {
+          // stuck
+          return {accepted:false,path};
+        }
+      }
+      return {accepted: currentDFA.finals.includes(cur), path};
+    }
+
+    // Lightweight SVG renderer (no external libs).
+    function buildDFASVG(dfa, path){
+      const W = 800, H = 320;
+      const cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 60;
+      const states = dfa.states;
+      const pos = {};
+      states.forEach((s,i)=>{
+        const angle = (2*Math.PI*i)/states.length - Math.PI/2;
+        pos[s] = {x: cx + radius*Math.cos(angle), y: cy + radius*Math.sin(angle)};
+      });
+      const edgeInPath = (src,dst)=>{
+        for(let i=0;i<path.length-1;i++){ if(path[i]===src && path[i+1]===dst) return true; }
+        return false;
+      };
+      let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Inter, monospace" font-size="12" stroke-linecap="round">`;
+      svg += '<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb6ca"/></marker><marker id="arrowRed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="red"/></marker></defs>';
+      svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>`;
+      if(dfa.start && pos[dfa.start]){
+        const p = pos[dfa.start];
+        svg += `<text x="40" y="30" fill="#9fb6ca">start</text>`;
+        svg += `<line x1="40" y1="40" x2="${p.x-30}" y2="${p.y}" stroke="#9fb6ca" stroke-width="2" marker-end="url(#arrow)"/>`;
+      }
+      // Group transitions by (src,dst) to combine symbols and handle reverse pairs
+      const grouped = {};
+      for(const k of Object.keys(dfa.transitions)){
+        const [src,sym] = k.split(':::');
+        const dst = dfa.transitions[k];
+        if(!grouped[src]) grouped[src] = {};
+        if(!grouped[src][dst]) grouped[src][dst] = new Set();
+        grouped[src][dst].add(sym);
+      }
+      // Draw edges
+      for(const src of Object.keys(grouped)){
+        for(const dst of Object.keys(grouped[src])){
+          if(!pos[src] || !pos[dst]) continue;
+          const syms = Array.from(grouped[src][dst]).sort();
+          const label = escapeHTML(syms.join(','));
+          const a = pos[src], b = pos[dst];
+          if(src === dst){
+            // self loop
+            svg += `<path d="M ${a.x} ${a.y} q 0 -40 40 -40 q 0 0 -40 40" fill="none" stroke="${edgeInPath(src,dst)?'red':'#9fb6ca'}" stroke-width="2" marker-end="url(#${edgeInPath(src,dst)?'arrowRed':'arrow'})"/>`;
+            svg += `<text x="${a.x+10}" y="${a.y-50}" fill="${edgeInPath(src,dst)?'red':'#9fb6ca'}">${label}</text>`;
+          } else {
+            // compute baseline endpoints shrunk to avoid node overlap
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const dist = Math.hypot(dx,dy) || 1;
+            const ex = dx/dist, ey = dy/dist; // unit along edge
+            const nx = -ey, ny = ex;          // unit normal (left-hand)
+            const shrink = 28;
+            const x1 = a.x + ex*shrink, y1 = a.y + ey*shrink;
+            const x2 = b.x - ex*shrink, y2 = b.y - ey*shrink;
+            // check if reverse edge exists
+            const reverseExists = !!(grouped[dst] && grouped[dst][src]);
+            const offset = reverseExists ? 10 : 0;
+            // Apply offset along normal for parallel effect
+            const ox = nx * (reverseExists ? offset : 0);
+            const oy = ny * (reverseExists ? offset : 0);
+            const X1 = x1 + ox, Y1 = y1 + oy;
+            const X2 = x2 + ox, Y2 = y2 + oy;
+            // If reverse exists, when the reverse draws, it will also offset (same magnitude on opposite side)
+            const color = edgeInPath(src,dst)?'red':'#9fb6ca';
+            svg += `<line x1="${X1}" y1="${Y1}" x2="${X2}" y2="${Y2}" stroke="${color}" stroke-width="2" marker-end="url(#${edgeInPath(src,dst)?'arrowRed':'arrow'})"/>`;
+            // label slightly above the edge (along normal)
+            const mx = (X1+X2)/2, my = (Y1+Y2)/2;
+            const labelOffset = 8;
+            const loy = my + ny * (reverseExists ? offset + labelOffset : -labelOffset);
+            svg += `<text x="${mx}" y="${reverseExists ? loy : (my - 6)}" fill="${color}" text-anchor="middle">${label}</text>`;
+          }
+        }
+      }
+      states.forEach(s=>{
+        const p = pos[s];
+        const isFinal = dfa.finals.includes(s);
+        svg += `<circle cx="${p.x}" cy="${p.y}" r="24" fill="#102837" stroke="#e6f0fb" stroke-width="2"/>`;
+        if(isFinal){ svg += `<circle cx="${p.x}" cy="${p.y}" r="18" fill="none" stroke="#e6f0fb" stroke-width="2"/>`; }
+        svg += `<text x="${p.x}" y="${p.y+4}" fill="#e6f0fb" font-weight="600" text-anchor="middle">${escapeHTML(s)}</text>`;
+      });
+      svg += '</svg>';
+      return svg;
+    }
+
+    function escapeHTML(str){ return str.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+    async function renderDiagram(inputString){
+      if(!currentDFA){ diagramArea.textContent='No diagram'; return null; }
+      let path=[];
+      if(inputString){ const res = runDFAOnInput(inputString); path = res.path; }
+      const svg = buildDFASVG(currentDFA, path);
+      diagramArea.innerHTML = svg || '';
+      const el = diagramArea.querySelector('svg');
+      if(!el){ diagramArea.textContent='Failed to generate SVG'; }
+      return el;
+    }
+
+    // save helpers
+    async function saveDiagramAs(type){
+      // find svg in diagramArea
+      const svg = diagramArea.querySelector('svg');
+      if(!svg){alert('No diagram to save');return}
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgData], {type:'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = ()=>{
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height + 100; // leave room for text
+        const ctx = canvas.getContext('2d');
+        // background white for jpg, transparent for png
+        if(type==='image/jpeg'){
+          ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+        ctx.drawImage(img,0,0);
+        // add text below
+        ctx.fillStyle = '#000000'; ctx.font='16px monospace';
+        const txt = `Input: ${id('test-input').value || ''}  Result: ${id('test-result').textContent || ''}`;
+        ctx.fillText(txt,8,img.height+20);
+        canvas.toBlob((blob)=>{
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `dfa_result.${type==='image/png'?'png':'jpg'}`;
+          a.click();
+        }, type, 0.92);
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = (e)=>{alert('Failed to convert SVG to image: '+e)};
+      img.src = url;
+    }
+
+    // UI wiring
+    id('btn-save-dfa').addEventListener('click',()=>{saveDFAFromForm()});
+    id('btn-go-test').addEventListener('click',()=>{document.querySelector('#test-input').focus();setStatus('Ready to test');});
+    id('btn-clear').addEventListener('click',()=>{id('states').value='';id('alphabet').value='';id('start').value='';id('finals').value='';id('transitions').value='';setStatus('Cleared');inspector.textContent='No DFA loaded.'});
+    // Random transitions generator: builds a random complete DFA using current states & alphabet
+    id('btn-random-transitions').addEventListener('click',()=>{
+      const states = id('states').value.split(',').map(s=>s.trim()).filter(Boolean);
+      const alphabet = id('alphabet').value.split(',').map(s=>s.trim()).filter(Boolean);
+      if(!states.length){ alert('Enter at least one state first.'); return; }
+      if(!alphabet.length){ alert('Enter at least one alphabet symbol first.'); return; }
+      // Generate transitions: for each (state,sym) assign random destination state.
+      const lines=[];
+      for(const st of states){
+        for(const sym of alphabet){
+          const dst = states[Math.floor(Math.random()*states.length)];
+          lines.push(`${st},${sym}->${dst}`);
+        }
+      }
+      id('transitions').value = lines.join('\n');
+      setStatus('Random transitions generated');
+    });
+    id('btn-run').addEventListener('click',async ()=>{
+      const inp = id('test-input').value.trim();
+      const res = runDFAOnInput(inp);
+      const accepted = res.accepted;
+      const pathText = res.path.join(' -> ');
+      id('test-result').innerHTML = `Input: ${inp} <br> Result: <span class="${accepted?'result-accepted':'result-rejected'}">${accepted?'Accepted':'Rejected'}</span><br>Path: ${pathText}`;
+      id('result-inspector').innerHTML = `<div class='small'>Input: ${inp}</div><div class='small'>Result: ${accepted?'Accepted':'Rejected'}</div><div class='small'>Path: ${pathText}</div>`;
+      setStatus('Last run: '+inp+' ('+(accepted?'Accepted':'Rejected')+')');
+      // enable save
+      id('btn-save-png').disabled=false; id('btn-save-jpg').disabled=false; id('btn-save-png').style.opacity=1; id('btn-save-jpg').style.opacity=1;
+      // render diagram highlighting path
+  await renderDiagram(inp);
+  logEvent(inp, accepted);
+    });
+
+    // Simulate step-by-step traversal
+    id('btn-simulate').addEventListener('click', async ()=>{
+      const inp = id('test-input').value.trim();
+      if(!inp){ alert('Enter an input string first'); return; }
+      if(!currentDFA){ alert('Define a DFA first'); return; }
+      id('btn-run').disabled = true; id('btn-simulate').disabled = true;
+      setStatus('Simulating...');
+      const res = runDFAOnInput(inp);
+      const fullPath = res.path;
+      const accepted = res.accepted;
+      let progressive = [];
+      for(let i=0;i<fullPath.length;i++){
+        progressive.push(fullPath[i]);
+        // Render partial path
+        const partialSvg = buildDFASVG(currentDFA, progressive);
+        diagramArea.innerHTML = partialSvg;
+        id('test-result').innerHTML = `Input: ${inp} <br> Step ${i+1}/${fullPath.length}: ${fullPath[i]} <br> Path: ${progressive.join(' -> ')}`;
+        await new Promise(r=>setTimeout(r, 600));
+      }
+      id('test-result').innerHTML += `<br>Final Result: <span class='${accepted?'result-accepted':'result-rejected'}'>${accepted?'Accepted':'Rejected'}</span>`;
+      id('result-inspector').innerHTML = `<div class='small'>Input: ${inp}</div><div class='small'>Result: ${accepted?'Accepted':'Rejected'}</div><div class='small'>Path: ${fullPath.join(' -> ')}</div>`;
+      id('btn-run').disabled = false; id('btn-simulate').disabled = false;
+      id('btn-save-png').disabled=false; id('btn-save-jpg').disabled=false; id('btn-save-png').style.opacity=1; id('btn-save-jpg').style.opacity=1;
+      setStatus('Simulation complete');
+      logEvent(inp, accepted);
+    });
+
+    id('btn-save-png').addEventListener('click',()=>saveDiagramAs('image/png'));
+    id('btn-save-jpg').addEventListener('click',()=>saveDiagramAs('image/jpeg'));
+  id('btn-export-json').addEventListener('click',()=>{ if(!currentDFA){alert('No DFA');return;} download('dfa.json', serializeCurrentDFA_JSON(), 'application/json'); });
+  id('btn-export-text').addEventListener('click',()=>{ if(!currentDFA){alert('No DFA');return;} download('dfa.txt', serializeCurrentDFA_Text(), 'text/plain'); });
+  id('btn-import-json').addEventListener('click',()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='.json'; inp.onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>{ try{ const obj=JSON.parse(ev.target.result); applyDFAObject(obj); persistToLocal(currentDFA); setStatus('Imported JSON'); }catch(err){ alert('Invalid JSON'); } }; r.readAsText(f); }; inp.click(); });
+  id('btn-import-txt').addEventListener('click',()=>{ triggerLoadFile(); });
+  id('btn-share-link').addEventListener('click',()=>{ buildShareLink(); });
+  id('btn-clear-history').addEventListener('click',()=>{ historyLog.length=0; const area=id('history-area'); if(area) area.innerHTML=''; });
+  const btnRefreshSaved = document.getElementById('btn-refresh-saved'); if(btnRefreshSaved){ btnRefreshSaved.addEventListener('click',()=>refreshSavedListUI()); }
+
+  // nav (if present)
+  const navHome = id('nav-home'); if(navHome) navHome.addEventListener('click',()=>{showHome()});
+  const navDefine = id('nav-define'); if(navDefine) navDefine.addEventListener('click',()=>{scrollToDefine();});
+  const navLoad = id('nav-load'); if(navLoad) navLoad.addEventListener('click',()=>{triggerLoadFile();});
+  const navExamples = id('nav-examples'); if(navExamples) navExamples.addEventListener('click',()=>{id('load-example-ends01').click()});
+
+    id('load-example-ends01').addEventListener('click',()=>{loadExampleEnds01()});
+    id('load-example-simple').addEventListener('click',()=>{loadExampleSimple()});
+
+    function showHome(){
+      setStatus('Home');
+      id('states').value='';id('alphabet').value='';id('start').value='';id('finals').value='';id('transitions').value='';
+      inspector.textContent='Welcome — define a DFA or load an example.';
+    }
+    function scrollToDefine(){ window.scrollTo({top:0,behavior:'smooth'}); setStatus('Define'); id('states').focus(); }
+
+    function triggerLoadFile(){
+      // create a temp file input to load a simple text format described in README
+      const input = document.createElement('input'); input.type='file'; input.accept='.txt';
+      input.onchange = e=>{
+        const f = e.target.files[0]; if(!f) return; const reader = new FileReader();
+        reader.onload = ev=>{ parseFileDFA(ev.target.result); };
+        reader.readAsText(f);
+      };
+      input.click();
+    }
+
+    function parseFileDFA(text){
+      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+      const data={states:'',alphabet:'',start:'',finals:'',transitions:[]}; let mode=null;
+      for(const ln of lines){ const low=ln.toLowerCase();
+        if(low.startsWith('states:')) data.states=ln.split(':',2)[1].trim();
+        else if(low.startsWith('alphabet:')) data.alphabet=ln.split(':',2)[1].trim();
+        else if(low.startsWith('start:')) data.start=ln.split(':',2)[1].trim();
+        else if(low.startsWith('finals:')||low.startsWith('final states:')) data.finals=ln.split(':',2)[1].trim();
+        else if(low.startsWith('transitions:')) mode='transitions';
+        else if(mode==='transitions') data.transitions.push(ln);
+      }
+      // populate form
+      id('states').value = data.states;
+      id('alphabet').value = data.alphabet;
+      id('start').value = data.start;
+      id('finals').value = data.finals;
+      id('transitions').value = data.transitions.join('\n');
+      setStatus('DFA loaded from file');
+      inspector.textContent = `Loaded from file`;
+      saveDFAFromForm();
+    }
+
+    function loadExampleEnds01(){
+      id('dfa-name').value='Ends with 01';
+      id('states').value='q0,q1,q2'; id('alphabet').value='0,1'; id('start').value='q0'; id('finals').value='q2';
+      id('transitions').value = 'q0,0->q0\nq0,1->q1\nq1,0->q2\nq1,1->q1\nq2,0->q0\nq2,1->q1';
+      setStatus('Example loaded: ends-with-01');
+      inspector.textContent='Example DFA: ends-with-01';
+      saveDFAFromForm();
+    }
+    function loadExampleSimple(){
+      id('dfa-name').value='Simple A/B';
+      id('states').value='A,B'; id('alphabet').value='0,1'; id('start').value='A'; id('finals').value='B';
+      id('transitions').value='A,0->B\nA,1->A\nB,0->B\nB,1->A';
+  setStatus('Example loaded: simple A/B'); inspector.textContent='Simple example'; saveDFAFromForm();
+    }
+
+    // --- Persistence & Export/Import ---
+    function transitionsMapToArray(map){ const arr=[]; for(const k of Object.keys(map||{})){ const [src,sym]=k.split(':::'); arr.push({src,sym,dst:map[k]}); } return arr; }
+    function transitionsArrayToMap(arr){ const m={}; (arr||[]).forEach(t=>{ if(t&&t.src!=null&&t.sym!=null&&t.dst!=null){ m[`${t.src}:::${t.sym}`]=t.dst; }}); return m; }
+    function getSavedDFAList(){ try{ const raw=localStorage.getItem('dfa_saved_list'); if(!raw) return []; const arr=JSON.parse(raw); return Array.isArray(arr)?arr:[]; }catch(e){ return []; } }
+    function setSavedDFAList(list){ try{ localStorage.setItem('dfa_saved_list', JSON.stringify(list||[])); }catch(e){} }
+    function canonicalizeDFA(d){ return JSON.stringify({states:d.states,alphabet:d.alphabet,start:d.start,finals:d.finals,transitions:transitionsMapToArray(d.transitions).sort((a,b)=> (a.src+b.sym+a.dst).localeCompare(b.src+b.sym+b.dst))}); }
+    function defaultDFAName(d){ const nStates = (d.states||[]).length; const finals=(d.finals||[]).join(','); return `DFA (${nStates} states) start=${d.start} finals=[${finals}]`; }
+    function addDFAToSavedList(d){
+      const list = getSavedDFAList();
+      const sig = canonicalizeDFA(d);
+      // dedupe: if same signature exists, move to top
+      const idx = list.findIndex(it=>it.sig===sig);
+      const displayName = (d.name && d.name.trim()) ? d.name.trim() : defaultDFAName(d);
+      const item = { id: Date.now().toString(), name: displayName, sig, data: {name:d.name||'',states:d.states,alphabet:d.alphabet,start:d.start,finals:d.finals,transitions:transitionsMapToArray(d.transitions)} };
+      if(idx>=0){ list.splice(idx,1); }
+      list.unshift(item);
+      // cap at 30
+      while(list.length>30) list.pop();
+      setSavedDFAList(list);
+    }
+    function deleteSavedDFA(id){ const list=getSavedDFAList().filter(it=>it.id!==id); setSavedDFAList(list); refreshSavedListUI(); }
+    function loadSavedDFA(id){ const it=getSavedDFAList().find(x=>x.id===id); if(!it) return; applyDFAObject(it.data); }
+    function refreshSavedListUI(){
+      const area = document.getElementById('saved-list'); if(!area) return;
+      const list = getSavedDFAList();
+      if(!list.length){ area.innerHTML = 'None saved yet.'; return; }
+      area.innerHTML = list.map(it=>`<div style="display:flex;align-items:center;gap:6px;margin:4px 0">`+
+        `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHTML(it.name)}">${escapeHTML(it.name)}</span>`+
+        `<button class="btn-ghost" data-act="load" data-id="${it.id}" style="padding:4px 8px;font-size:11px">Load</button>`+
+        `<button class="btn-ghost" data-act="del" data-id="${it.id}" style="padding:4px 8px;font-size:11px">Delete</button>`+
+      `</div>`).join('');
+      // attach events
+      area.querySelectorAll('button[data-act="load"]').forEach(btn=>{
+        btn.addEventListener('click',()=>loadSavedDFA(btn.getAttribute('data-id')));
+      });
+      area.querySelectorAll('button[data-act="del"]').forEach(btn=>{
+        btn.addEventListener('click',()=>deleteSavedDFA(btn.getAttribute('data-id')));
+      });
+    }
+  function serializeCurrentDFA_JSON(){ if(!currentDFA) return ''; return JSON.stringify({states:currentDFA.states,alphabet:currentDFA.alphabet,start:currentDFA.start,finals:currentDFA.finals,transitions:transitionsMapToArray(currentDFA.transitions)},null,2); }
+    function serializeCurrentDFA_Text(){ if(!currentDFA) return ''; const lines=[]; lines.push(`states: ${currentDFA.states.join(',')}`); lines.push(`alphabet: ${currentDFA.alphabet.join(',')}`); lines.push(`start: ${currentDFA.start}`); lines.push(`finals: ${currentDFA.finals.join(',')}`); lines.push('transitions:'); Object.keys(currentDFA.transitions).sort().forEach(k=>{ const [src,sym]=k.split(':::'); lines.push(`${src},${sym}->${currentDFA.transitions[k]}`); }); return lines.join('\n'); }
+    function download(name, content, type){ const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
+  function persistToLocal(d){ const obj={name:d.name||'',states:d.states,alphabet:d.alphabet,start:d.start,finals:d.finals,transitions:transitionsMapToArray(d.transitions)}; localStorage.setItem('dfa_saved', JSON.stringify(obj)); }
+  function loadFromLocal(){ try{ const raw=localStorage.getItem('dfa_saved'); if(!raw) return false; const obj=JSON.parse(raw); applyDFAObject(obj); setStatus('Loaded from browser storage'); return true; }catch(e){ return false; }}
+  function applyDFAObject(obj){ if(!obj) return; const name=obj.name||''; const states=obj.states||[]; const alphabet=obj.alphabet||[]; const start=obj.start||''; const finals=obj.finals||[]; const transitions= Array.isArray(obj.transitions) ? transitionsArrayToMap(obj.transitions) : (obj.transitions||{}); id('dfa-name').value=name; id('states').value=states.join(','); id('alphabet').value=alphabet.join(','); id('start').value=start; id('finals').value=finals.join(','); id('transitions').value=Object.keys(transitions).map(k=>{ const [s,y]=k.split(':::'); return `${s},${y}->${transitions[k]}`; }).join('\n'); currentDFA={name,states,alphabet,start,finals,transitions}; inspector.textContent=`DFA loaded — states:${states.length}, alphabet:${alphabet.length}`; renderDiagram(''); }
+    function copyToClipboard(txt){ if(navigator.clipboard) return navigator.clipboard.writeText(txt); const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}finally{document.body.removeChild(ta);} return Promise.resolve(); }
+    function encodeForHash(obj){ const json=JSON.stringify(obj); return btoa(unescape(encodeURIComponent(json))); }
+    function decodeFromHash(b64){ const json=decodeURIComponent(escape(atob(b64))); return JSON.parse(json); }
+  function buildShareLink(){ if(!currentDFA){ alert('Define or load a DFA first'); return; } const obj={name:currentDFA.name||'',states:currentDFA.states,alphabet:currentDFA.alphabet,start:currentDFA.start,finals:currentDFA.finals,transitions:transitionsMapToArray(currentDFA.transitions)}; const encoded=encodeForHash(obj); const base=location.origin+location.pathname; const url=`${base}#dfa=${encoded}`; copyToClipboard(url).then(()=>setStatus('Share link copied')).catch(()=>{}); alert('Share link copied to clipboard'); }
+    function tryLoadFromHash(){ const m=location.hash.match(/#dfa=([^&]+)/); if(m){ try{ const obj=decodeFromHash(m[1]); applyDFAObject(obj); setStatus('Loaded from link'); return true; }catch(e){ console.warn('Invalid hash',e); } } return false; }
+
+    // helper to initialize
+    (function init(){
+      setStatus('Ready'); id('btn-save-png').disabled=true; id('btn-save-jpg').disabled=true; id('btn-save-png').style.opacity=0.6; id('btn-save-jpg').style.opacity=0.6;
+      const fromLink = tryLoadFromHash();
+      const fromLocal = !fromLink && loadFromLocal();
+      if(!fromLink && !fromLocal){ loadExampleEnds01(); }
+      refreshSavedListUI();
+      renderDiagram('');
+    })();
+
+  </script>
+</body>
+</html>
