@@ -5,37 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>DFA Playground — HTML</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg:#0f2b44; --panel:#13324a; --card:#102837; --accent:#31c7ff; --text:#e6f0fb; --muted:#9fb6ca;
-      --radius:8px;
-    }
-    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
-    body{margin:0;background:var(--bg);color:var(--text);}
-    .app{display:flex;flex-direction:column;height:100vh}
-    .topbar{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);border-bottom:1px solid rgba(255,255,255,0.03)}
-    .logo{width:40px;height:40px;border-radius:8px;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
-    .title{font-size:18px;font-weight:600}
-    .content{flex:1;display:flex;gap:12px;padding:16px}
-    .col-left{width:220px;background:var(--panel);border-radius:8px;padding:12px}
-    .col-center{flex:1;background:transparent;padding:12px}
-    .col-right{width:300px;background:var(--panel);border-radius:8px;padding:12px}
-    .card{background:var(--card);padding:12px;border-radius:8px;margin-bottom:12px}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type=text], textarea, select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
-    textarea{min-height:120px;font-family:monospace}
-    .btn{display:inline-block;padding:8px 12px;border-radius:6px;background:var(--accent);color:#042033;border:none;cursor:pointer}
-    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--text)}
-    .nav-btn{display:block;width:100%;text-align:left;padding:10px;border-radius:6px;border:none;background:transparent;color:var(--text);margin-bottom:8px;cursor:pointer}
-    .nav-btn:hover{background:rgba(255,255,255,0.02)}
-    .small{font-size:12px;color:var(--muted)}
-    .preview{background:#071724;border-radius:6px;padding:8px}
-  .result-accepted{color:green}
-  .result-rejected{color:red}
-    .footer{padding:10px 18px;font-size:12px;color:var(--muted);border-top:1px solid rgba(255,255,255,0.03)}
-    .row{display:flex;gap:8px;align-items:center}
-    .stack{display:flex;flex-direction:column;gap:8px}
-  </style>
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <div class="app">
@@ -60,6 +30,15 @@
         <div class="card">
           <div style="font-weight:600;display:flex;align-items:center;gap:6px">Saved DFAs <button class="btn-ghost" id="btn-refresh-saved" style="padding:4px 8px;font-size:11px">Refresh</button></div>
           <div id="saved-list" class="small" style="max-height:180px;overflow:auto">None saved yet.</div>
+        </div>
+
+        <!-- Examples moved here (below Saved DFAs) -->
+        <div class="card">
+          <div style="font-weight:600">Examples</div>
+          <div style="margin-top:8px" class="stack">
+            <button class="btn-ghost" id="load-example-ends01">Ends with '01' (example)</button>
+            <button class="btn-ghost" id="load-example-simple">Simple A/B example</button>
+          </div>
         </div>
       </div>
 
@@ -103,7 +82,7 @@
               <button class="btn" id="btn-save-dfa">Save DFA</button>
               <button class="btn-ghost" id="btn-clear">Clear</button>
               <div style="flex:1"></div>
-              <button class="btn-ghost" id="btn-go-test">Proceed to Test Strings</button>
+              <button class="btn-ghost" id="btn-go-test" title="Proceed to test strings">Proceed to Test Strings</button>
             </div>
             <div class="row">
               <button class="btn-ghost" id="btn-export-json" title="Download DFA as JSON">Export JSON</button>
@@ -118,26 +97,28 @@
         </div>
 
         <div class="card">
+          <div style="font-weight:700">History</div>
+          <div id="history-area" class="small" style="max-height:220px;overflow:auto">No events yet.</div>
+          <div style="margin-top:8px" class="row">
+            <button class="btn-ghost" id="btn-clear-history">Clear</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-right">
+        <div class="card">
           <div style="font-weight:700">Test Strings</div>
           <div style="margin-top:8px" class="row">
             <input id="test-input" type="text" placeholder="Enter input string" style="flex:1" />
             <button class="btn" id="btn-run">Run Test</button>
             <button class="btn-ghost" id="btn-simulate" title="Animate traversal">Simulate</button>
           </div>
-
           <div id="test-result" style="margin-top:12px" class="small">No test run yet.</div>
         </div>
 
         <div class="card">
           <div style="font-weight:700">Diagram Preview</div>
           <div id="diagram-area" class="preview" style="margin-top:8px;min-height:200px;display:flex;align-items:center;justify-content:center">No diagram</div>
-        </div>
-      </div>
-
-      <div class="col-right">
-        <div class="card">
-          <div style="font-weight:700">Result</div>
-          <div id="result-inspector" style="margin-top:8px" class="small">No run</div>
           <div style="margin-top:12px" class="row">
             <button class="btn" id="btn-save-png">Save PNG</button>
             <button class="btn-ghost" id="btn-save-jpg">Save JPG</button>
@@ -145,19 +126,8 @@
         </div>
 
         <div class="card">
-          <div style="font-weight:700">Examples</div>
-          <div style="margin-top:8px" class="stack">
-            <button class="btn-ghost" id="load-example-ends01">Ends with '01' (example)</button>
-            <button class="btn-ghost" id="load-example-simple">Simple A/B example</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div style="font-weight:700">History</div>
-          <div id="history-area" class="small" style="max-height:220px;overflow:auto">No events yet.</div>
-          <div style="margin-top:8px" class="row">
-            <button class="btn-ghost" id="btn-clear-history">Clear</button>
-          </div>
+          <div style="font-weight:700">Result</div>
+          <div id="result-inspector" style="margin-top:8px" class="small">No run</div>
         </div>
       </div>
     </div>
@@ -335,35 +305,74 @@
 
     // save helpers
     async function saveDiagramAs(type){
-      // find svg in diagramArea
-      const svg = diagramArea.querySelector('svg');
-      if(!svg){alert('No diagram to save');return}
-      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgEl = diagramArea.querySelector('svg');
+      if(!svgEl){ alert('No diagram to save'); return; }
+
+      // Get viewBox size (buildDFASVG sets viewBox="0 0 W H")
+      let W = 800, H = 320;
+      const vb = svgEl.getAttribute('viewBox');
+      if(vb){
+        const parts = vb.trim().split(/\s+/).map(Number).filter(n=>!isNaN(n));
+        if(parts.length === 4){ W = parts[2]; H = parts[3]; }
+      }
+
+      // Render at higher resolution to avoid pixelation (use devicePixelRatio)
+      const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      const targetW = Math.round(W * dpr);
+      const targetH = Math.round(H * dpr);
+
+      // Serialize SVG and inject explicit width/height so rasterizer uses high-res size
+      let svgData = new XMLSerializer().serializeToString(svgEl);
+      if(!/^\s*<svg[^>]*xmlns=/.test(svgData)){
+        svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+      svgData = svgData.replace(/<svg([^>]*)>/, `<svg$1 width="${targetW}" height="${targetH}">`);
+
       const svgBlob = new Blob([svgData], {type:'image/svg+xml;charset=utf-8'});
       const url = URL.createObjectURL(svgBlob);
       const img = new Image();
+
       img.onload = ()=>{
         const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height + 100; // leave room for text
+        canvas.width = targetW;
+        // leave space for caption below at the same scale
+        const captionHeight = Math.round(40 * dpr);
+        canvas.height = targetH + captionHeight;
         const ctx = canvas.getContext('2d');
-        // background white for jpg, transparent for png
-        if(type==='image/jpeg'){
-          ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        // background for jpeg, transparent for png
+        if(type === 'image/jpeg'){
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+        } else {
+          ctx.clearRect(0,0,canvas.width,canvas.height);
         }
-        ctx.drawImage(img,0,0);
-        // add text below
-        ctx.fillStyle = '#000000'; ctx.font='16px monospace';
+
+        // Draw SVG into canvas at target size
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+
+        // Caption text (scaled)
+        ctx.fillStyle = '#000000';
+        ctx.font = `${Math.round(16 * dpr)}px monospace`;
         const txt = `Input: ${id('test-input').value || ''}  Result: ${id('test-result').textContent || ''}`;
-        ctx.fillText(txt,8,img.height+20);
+        ctx.fillText(txt, 8 * dpr, targetH + Math.round(24 * dpr));
+
         canvas.toBlob((blob)=>{
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
           a.download = `dfa_result.${type==='image/png'?'png':'jpg'}`;
           a.click();
+          URL.revokeObjectURL(a.href);
         }, type, 0.92);
+
         URL.revokeObjectURL(url);
       };
-      img.onerror = (e)=>{alert('Failed to convert SVG to image: '+e)};
+
+      img.onerror = (e)=>{
+        alert('Failed to convert SVG to image: ' + e);
+        URL.revokeObjectURL(url);
+      };
+
       img.src = url;
     }
 
@@ -564,7 +573,6 @@
       refreshSavedListUI();
       renderDiagram('');
     })();
-
   </script>
-</body>
+ </body>
 </html>
