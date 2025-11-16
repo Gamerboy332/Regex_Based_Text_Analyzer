@@ -1,4 +1,4 @@
-# DFA Playground (Web Version)
+# Reg-Sim (Web Version)
 
 > The repository name references a previous regex/text analyzer concept. The current codebase provides a single‑page, browser‑based Deterministic Finite Automaton (DFA) playground implemented in plain HTML/CSS/JavaScript (`index.html`). No build step or external runtime dependencies are required.
 
