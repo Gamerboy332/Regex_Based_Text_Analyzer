@@ -1,6 +1,6 @@
 # Reg-Sim (Web Version)
 
-> The repository name references a previous regex/text analyzer concept. The current codebase provides a single‑page, browser‑based Deterministic Finite Automaton (DFA) playground implemented in plain HTML/CSS/JavaScript (`index.html`). No build step or external runtime dependencies are required.
+> The repository name references a previous regex/text analyzer concept. The current codebase provides a single‑page, browser‑based Regular Langguages Deterministic Finite Automaton (DFA)  implemented in plain HTML/CSS/JavaScript (`index.html`). No build step or external runtime dependencies are required.
 
 ## Quick Start
 
@@ -148,4 +148,4 @@ Open a PR or issue with ideas—this is a single‑file prototype intentionally 
 Automata theory concepts are standard; implementation and UI are custom. Original repository name retained for continuity.
 
 ---
-Enjoy exploring DFAs in the browser!
+Enjoy exploring Regular Languages of DFAs in the browser!
